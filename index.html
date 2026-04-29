@@ -263,6 +263,45 @@
         background: #fff;
       }
 
+      .choose-recipe {
+        width: 100%;
+        margin-top: 12px;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      .recipe-options {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .recipe-options[hidden] {
+        display: none;
+      }
+
+      .recipe-option {
+        width: 100%;
+        min-height: 36px;
+        padding: 8px 10px;
+        color: var(--ink);
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-align: left;
+      }
+
+      .recipe-option.is-selected {
+        color: #fff;
+        background: var(--berry);
+        border-color: var(--berry);
+      }
+
       .shopping-panel {
         position: sticky;
         top: 16px;
@@ -805,6 +844,23 @@
         render();
       }
 
+      function setMealRecipe(dayIndex, mealId, recipeId) {
+        const recipe = recipes.find((item) => item.id === recipeId && item.meal === mealId);
+        if (!recipe || !currentPlan[dayIndex]) return;
+        currentPlan[dayIndex].meals[mealId] = recipe;
+        render();
+      }
+
+      function toggleRecipeOptions(button) {
+        const options = document.querySelector(`#options-${button.dataset.day}-${button.dataset.meal}`);
+        if (!options) return;
+        const shouldOpen = options.hidden;
+        document.querySelectorAll(".recipe-options").forEach((panel) => {
+          panel.hidden = true;
+        });
+        options.hidden = !shouldOpen;
+      }
+
       function render() {
         const household = getHousehold();
         const regionMultiplier = Number(locationFactor.value) || 1;
@@ -823,6 +879,14 @@
                   <h3 class="recipe-name">${recipe.name}</h3>
                   <div class="recipe-meta">${recipe.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
                   <p class="ingredients">${recipe.ingredients.map(([name]) => name).join(", ")}</p>
+                  <button class="primary-button choose-recipe" type="button" data-day="${dayIndex}" data-meal="${id}">Ver opciones</button>
+                  <div class="recipe-options" id="options-${dayIndex}-${id}" hidden>
+                    ${getPool(id).map((option) => `
+                      <button class="recipe-option ${option.id === recipe.id ? "is-selected" : ""}" type="button" data-day="${dayIndex}" data-meal="${id}" data-recipe="${option.id}">
+                        ${option.name}
+                      </button>
+                    `).join("")}
+                  </div>
                 </article>`;
             }).join("")}
           </section>`).join("");
@@ -877,8 +941,22 @@
       }
 
       planner.addEventListener("click", (event) => {
-        const button = event.target.closest(".swap-button");
-        if (button) swapMeal(Number(button.dataset.day), button.dataset.meal);
+        const swapButton = event.target.closest(".swap-button");
+        if (swapButton) {
+          swapMeal(Number(swapButton.dataset.day), swapButton.dataset.meal);
+          return;
+        }
+
+        const chooseButton = event.target.closest(".choose-recipe");
+        if (chooseButton) {
+          toggleRecipeOptions(chooseButton);
+          return;
+        }
+
+        const optionButton = event.target.closest(".recipe-option");
+        if (optionButton) {
+          setMealRecipe(Number(optionButton.dataset.day), optionButton.dataset.meal, optionButton.dataset.recipe);
+        }
       });
       document.querySelector("#generateBtn").addEventListener("click", generatePlan);
       styleFilter.addEventListener("change", generatePlan);
