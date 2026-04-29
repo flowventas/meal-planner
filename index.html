@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planificador semanal de comidas</title>
+    <style>
+      :root {
+        --ink: #243126;
+        --muted: #66736a;
+        --line: #d9e1d7;
+        --panel: #ffffff;
+        --mint: #d9f0df;
+        --berry: #a44765;
+        --sun: #f2c14e;
+        --aqua: #4c9f9a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(135deg, #eef8ed, #fff7e4);
+      }
+
+      button,
+      select {
+        font: inherit;
+      }
+
+      .app-shell {
+        width: min(1440px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 44px;
+      }
+
+      .toolbar,
+      .summary-grid article,
+      .planner-panel,
+      .shopping-panel {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--line);
+        box-shadow: 0 16px 45px rgba(36, 49, 38, 0.12);
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 22px;
+        border-radius: 8px;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--berry);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 0;
+        font-size: clamp(2rem, 4vw, 4rem);
+        line-height: 0.98;
+      }
+
+      h2 {
+        margin-bottom: 4px;
+        font-size: 1.1rem;
+      }
+
+      .actions {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      select,
+      input,
+      .primary-button,
+      .swap-button {
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      input {
+        width: 88px;
+        padding: 0 10px;
+        color: var(--ink);
+        background: var(--panel);
+      }
+
+      select {
+        min-width: 180px;
+        padding: 0 38px 0 12px;
+        color: var(--ink);
+        background: var(--panel);
+      }
+
+      .primary-button,
+      .swap-button {
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      .primary-button {
+        padding: 0 18px;
+        color: #fff;
+        background: var(--berry);
+        border-color: var(--berry);
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin: 16px 0;
+      }
+
+      .summary-grid article {
+        min-height: 92px;
+        padding: 18px;
+        border-radius: 8px;
+      }
+
+      .summary-grid span {
+        display: block;
+        color: var(--aqua);
+        font-size: 2rem;
+        font-weight: 800;
+      }
+
+      .summary-grid p,
+      .panel-heading p,
+      .recipe-meta,
+      .ingredients,
+      .shopping-list li {
+        color: var(--muted);
+      }
+
+      .summary-grid p,
+      .panel-heading p {
+        margin-bottom: 0;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .planner-panel,
+      .shopping-panel {
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .panel-heading {
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .planner {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(180px, 1fr));
+        gap: 1px;
+        background: var(--line);
+        overflow-x: auto;
+      }
+
+      .day-column {
+        min-width: 180px;
+        background: #fbfcf8;
+      }
+
+      .day-title {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 14px;
+        font-size: 0.92rem;
+        font-weight: 800;
+        background: var(--mint);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .meal-card {
+        min-height: 178px;
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .meal-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: var(--berry);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .recipe-name {
+        margin: 0 0 8px;
+        font-size: 0.98rem;
+        line-height: 1.25;
+      }
+
+      .recipe-meta {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+        font-size: 0.75rem;
+      }
+
+      .tag {
+        padding: 4px 7px;
+        color: var(--ink);
+        background: rgba(242, 193, 78, 0.35);
+        border-radius: 999px;
+      }
+
+      .ingredients {
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.45;
+      }
+
+      .swap-button {
+        width: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        color: var(--berry);
+        background: #fff;
+      }
+
+      .shopping-panel {
+        position: sticky;
+        top: 16px;
+      }
+
+      .shopping-list {
+        padding: 4px 20px 20px;
+      }
+
+      .shopping-group {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .shopping-group:last-child {
+        border-bottom: 0;
+      }
+
+      .shopping-group h3 {
+        margin: 0 0 8px;
+        font-size: 0.9rem;
+      }
+
+      .shopping-list ul {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .shopping-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 0.86rem;
+      }
+
+      .quantity {
+        color: var(--ink);
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 980px) {
+        .toolbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .shopping-panel {
+          position: static;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app-shell {
+          width: min(100% - 20px, 1440px);
+          padding-top: 10px;
+        }
+
+        .toolbar,
+        .summary-grid article {
+          padding: 16px;
+        }
+
+        .actions,
+        .field,
+        select,
+        input,
+        .primary-button {
+          width: 100%;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .planner {
+          grid-template-columns: repeat(7, minmax(210px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="toolbar" aria-label="Controles del planificador">
+        <div>
+          <p class="eyebrow">Semana saludable</p>
+          <h1>Planificador de comidas</h1>
+        </div>
+        <div class="actions">
+          <label class="field">
+            <span>Estilo</span>
+            <select id="styleFilter">
+              <option value="balanced">Balanceado</option>
+              <option value="light">Ligero</option>
+              <option value="highProtein">Alto en proteina</option>
+              <option value="budget">Economico</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Adultos</span>
+            <input id="adultCount" type="number" min="0" max="12" value="2" />
+          </label>
+          <label class="field">
+            <span>Ninos</span>
+            <input id="childCount" type="number" min="0" max="12" value="0" />
+          </label>
+          <label class="field">
+            <span>Bebes</span>
+            <input id="babyCount" type="number" min="0" max="12" value="0" />
+          </label>
+          <label class="field">
+            <span>Ubicacion</span>
+            <select id="locationFactor">
+              <option value="1">Mexico promedio</option>
+              <option value="1.18">Ciudad grande</option>
+              <option value="0.92">Ciudad pequena</option>
+              <option value="1.28">Zona turistica</option>
+              <option value="1.75">Estados Unidos</option>
+            </select>
+          </label>
+          <button id="generateBtn" class="primary-button" type="button">Generar semana</button>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="Resumen nutricional">
+        <article><span id="recipeCount">0</span><p>recetas distintas</p></article>
+        <article><span id="vegCount">0</span><p>comidas con verduras</p></article>
+        <article><span id="servingCount">0</span><p>porciones por comida</p></article>
+        <article><span id="costEstimate">$0</span><p>costo semanal estimado</p></article>
+      </section>
+
+      <section class="content-grid">
+        <div class="planner-panel">
+          <div class="panel-heading">
+            <h2>Menu semanal</h2>
+            <p>Cambia cualquier comida sin rehacer toda la semana.</p>
+          </div>
+          <div id="planner" class="planner"></div>
+        </div>
+        <aside class="shopping-panel">
+          <div class="panel-heading">
+            <h2>Lista de super</h2>
+            <p>Agrupada automaticamente por tipo de producto, con costo aproximado.</p>
+          </div>
+          <div id="shoppingList" class="shopping-list"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const days = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"];
+      const mealTypes = [
+        { id: "breakfast", label: "Desayuno" },
+        { id: "lunch", label: "Comida" },
+        { id: "dinner", label: "Cena" },
+      ];
+      const recipes = [
+        { id: "avena-frutos", meal: "breakfast", name: "Avena con frutos rojos y nuez", tags: ["fibra", "rapido"], styles: ["balanced", "light", "budget"], ingredients: [["Avena", 0.5, "taza", "Cereales"], ["Leche o bebida vegetal", 1, "taza", "Lacteos"], ["Frutos rojos", 0.5, "taza", "Frutas"], ["Nuez", 2, "cdas", "Semillas y nueces"]] },
+        { id: "huevo-espinaca", meal: "breakfast", name: "Omelette de espinaca con aguacate", tags: ["proteina", "verduras"], styles: ["balanced", "highProtein", "light"], ingredients: [["Huevo", 2, "pzas", "Proteinas"], ["Espinaca", 1, "taza", "Verduras"], ["Aguacate", 0.5, "pza", "Frutas"], ["Tortilla de maiz", 2, "pzas", "Cereales"]] },
+        { id: "yogurt-granola", meal: "breakfast", name: "Yogurt natural con granola y platano", tags: ["calcio", "sin cocinar"], styles: ["balanced", "budget"], ingredients: [["Yogurt natural", 1, "taza", "Lacteos"], ["Granola", 0.33, "taza", "Cereales"], ["Platano", 1, "pza", "Frutas"], ["Chia", 1, "cda", "Semillas y nueces"]] },
+        { id: "toast-pavo", meal: "breakfast", name: "Pan integral con pavo y jitomate", tags: ["proteina", "practico"], styles: ["balanced", "highProtein"], ingredients: [["Pan integral", 2, "rebanadas", "Cereales"], ["Pechuga de pavo", 80, "g", "Proteinas"], ["Jitomate", 1, "pza", "Verduras"], ["Queso panela", 40, "g", "Lacteos"]] },
+        { id: "pollo-quinoa", meal: "lunch", name: "Bowl de pollo, quinoa y verduras", tags: ["proteina", "verduras"], styles: ["balanced", "highProtein"], ingredients: [["Pechuga de pollo", 160, "g", "Proteinas"], ["Quinoa", 0.5, "taza", "Cereales"], ["Brocoli", 1, "taza", "Verduras"], ["Zanahoria", 1, "pza", "Verduras"]] },
+        { id: "salmon-arroz", meal: "lunch", name: "Salmon con arroz integral y ensalada", tags: ["omega 3", "verduras"], styles: ["balanced", "highProtein", "light"], ingredients: [["Salmon", 150, "g", "Proteinas"], ["Arroz integral", 0.5, "taza", "Cereales"], ["Lechuga", 2, "tazas", "Verduras"], ["Pepino", 1, "pza", "Verduras"]] },
+        { id: "lentejas", meal: "lunch", name: "Lentejas guisadas con verduras", tags: ["economico", "fibra"], styles: ["balanced", "budget", "light"], ingredients: [["Lentejas", 0.75, "taza", "Leguminosas"], ["Calabacita", 1, "pza", "Verduras"], ["Zanahoria", 1, "pza", "Verduras"], ["Jitomate", 2, "pzas", "Verduras"]] },
+        { id: "tacos-pescado", meal: "lunch", name: "Tacos de pescado con col morada", tags: ["fresco", "proteina"], styles: ["balanced", "light"], ingredients: [["Filete de pescado", 150, "g", "Proteinas"], ["Tortilla de maiz", 3, "pzas", "Cereales"], ["Col morada", 1, "taza", "Verduras"], ["Limon", 1, "pza", "Frutas"]] },
+        { id: "picadillo-pavo", meal: "lunch", name: "Picadillo de pavo con verduras", tags: ["proteina", "familiar"], styles: ["balanced", "highProtein", "budget"], ingredients: [["Pavo molido", 160, "g", "Proteinas"], ["Papa", 1, "pza", "Verduras"], ["Chicharos", 0.5, "taza", "Verduras"], ["Jitomate", 2, "pzas", "Verduras"]] },
+        { id: "ensalada-garbanzo", meal: "dinner", name: "Ensalada de garbanzo con atun", tags: ["sin cocinar", "proteina"], styles: ["balanced", "highProtein", "budget"], ingredients: [["Garbanzo", 0.75, "taza", "Leguminosas"], ["Atun en agua", 1, "lata", "Proteinas"], ["Pepino", 1, "pza", "Verduras"], ["Jitomate", 1, "pza", "Verduras"]] },
+        { id: "sopa-pollo", meal: "dinner", name: "Sopa de pollo con verduras", tags: ["ligero", "reconfortante"], styles: ["balanced", "light", "budget"], ingredients: [["Pechuga de pollo", 120, "g", "Proteinas"], ["Calabacita", 1, "pza", "Verduras"], ["Zanahoria", 1, "pza", "Verduras"], ["Fideos integrales", 0.5, "taza", "Cereales"]] },
+        { id: "quesadillas-hongos", meal: "dinner", name: "Quesadillas de hongos y queso panela", tags: ["rapido", "verduras"], styles: ["balanced", "budget"], ingredients: [["Tortilla de maiz", 3, "pzas", "Cereales"], ["Champinones", 1, "taza", "Verduras"], ["Queso panela", 70, "g", "Lacteos"], ["Pico de gallo", 0.5, "taza", "Verduras"]] },
+        { id: "tofu-verduras", meal: "dinner", name: "Salteado de tofu con verduras", tags: ["vegetariano", "ligero"], styles: ["balanced", "light", "highProtein"], ingredients: [["Tofu firme", 150, "g", "Proteinas"], ["Brocoli", 1, "taza", "Verduras"], ["Pimiento", 1, "pza", "Verduras"], ["Arroz integral", 0.4, "taza", "Cereales"]] },
+      ];
+
+      let currentPlan = [];
+      let cursor = {};
+      const planner = document.querySelector("#planner");
+      const shoppingList = document.querySelector("#shoppingList");
+      const styleFilter = document.querySelector("#styleFilter");
+      const recipeCount = document.querySelector("#recipeCount");
+      const vegCount = document.querySelector("#vegCount");
+      const servingCount = document.querySelector("#servingCount");
+      const costEstimate = document.querySelector("#costEstimate");
+      const adultCount = document.querySelector("#adultCount");
+      const childCount = document.querySelector("#childCount");
+      const babyCount = document.querySelector("#babyCount");
+      const locationFactor = document.querySelector("#locationFactor");
+
+      const estimatedPrices = {
+        Aguacate: 22,
+        "Arroz integral": 42,
+        "Atun en agua": 22,
+        Avena: 38,
+        Brocoli: 38,
+        Calabacita: 30,
+        Champinones: 85,
+        Chia: 120,
+        Chicharos: 48,
+        "Col morada": 26,
+        Espinaca: 34,
+        "Fideos integrales": 34,
+        "Filete de pescado": 180,
+        "Frutos rojos": 150,
+        Garbanzo: 45,
+        Granola: 95,
+        Huevo: 54,
+        Jitomate: 32,
+        "Leche o bebida vegetal": 32,
+        Lechuga: 22,
+        Lentejas: 42,
+        Limon: 4,
+        Nuez: 220,
+        "Pan integral": 52,
+        Papa: 28,
+        "Pavo molido": 170,
+        "Pechuga de pavo": 220,
+        "Pechuga de pollo": 150,
+        Pepino: 12,
+        "Pico de gallo": 58,
+        Pimiento: 18,
+        Platano: 6,
+        "Queso panela": 180,
+        Quinoa: 120,
+        Salmon: 380,
+        "Tofu firme": 160,
+        "Tortilla de maiz": 24,
+        "Yogurt natural": 58,
+        Zanahoria: 26,
+      };
+
+      const purchaseUnits = {
+        Aguacate: { unit: "pza", factor: 1 },
+        "Arroz integral": { unit: "kg", factor: 0.185 },
+        "Atun en agua": { unit: "lata", factor: 1 },
+        Avena: { unit: "kg", factor: 0.08 },
+        Brocoli: { unit: "kg", factor: 0.09 },
+        Calabacita: { unit: "kg", factor: 0.18 },
+        Champinones: { unit: "kg", factor: 0.07 },
+        Chia: { unit: "kg", factor: 0.012 },
+        Chicharos: { unit: "kg", factor: 0.15 },
+        "Col morada": { unit: "kg", factor: 0.07 },
+        Espinaca: { unit: "manojo", factor: 0.5 },
+        "Fideos integrales": { unit: "paquete", factor: 0.25 },
+        "Filete de pescado": { unit: "kg", factor: 0.001 },
+        "Frutos rojos": { unit: "kg", factor: 0.075 },
+        Garbanzo: { unit: "kg", factor: 0.15 },
+        Granola: { unit: "kg", factor: 0.04 },
+        Huevo: { unit: "docena", factor: 1 / 12 },
+        Jitomate: { unit: "kg", factor: 0.12 },
+        "Leche o bebida vegetal": { unit: "litro", factor: 0.24 },
+        Lechuga: { unit: "pza", factor: 0.25 },
+        Lentejas: { unit: "kg", factor: 0.14 },
+        Limon: { unit: "pza", factor: 1 },
+        Nuez: { unit: "kg", factor: 0.014 },
+        "Pan integral": { unit: "paquete", factor: 1 / 20 },
+        Papa: { unit: "kg", factor: 0.18 },
+        "Pavo molido": { unit: "kg", factor: 0.001 },
+        "Pechuga de pavo": { unit: "kg", factor: 0.001 },
+        "Pechuga de pollo": { unit: "kg", factor: 0.001 },
+        Pepino: { unit: "pza", factor: 1 },
+        "Pico de gallo": { unit: "kg", factor: 0.12 },
+        Pimiento: { unit: "pza", factor: 1 },
+        Platano: { unit: "pza", factor: 1 },
+        "Queso panela": { unit: "kg", factor: 0.001 },
+        Quinoa: { unit: "kg", factor: 0.17 },
+        Salmon: { unit: "kg", factor: 0.001 },
+        "Tofu firme": { unit: "kg", factor: 0.001 },
+        "Tortilla de maiz": { unit: "kg", factor: 0.025 },
+        "Yogurt natural": { unit: "kg", factor: 0.24 },
+        Zanahoria: { unit: "kg", factor: 0.09 },
+      };
+
+      function getHousehold() {
+        const adults = Math.max(Number(adultCount.value) || 0, 0);
+        const children = Math.max(Number(childCount.value) || 0, 0);
+        const babies = Math.max(Number(babyCount.value) || 0, 0);
+        const portions = adults + children * 0.6 + babies * 0.3;
+        return { adults, children, babies, portions: Math.max(portions, 0.3) };
+      }
+
+      function getPool(meal) {
+        const style = styleFilter.value;
+        const filtered = recipes.filter((recipe) => recipe.meal === meal && recipe.styles.includes(style));
+        return filtered.length ? filtered : recipes.filter((recipe) => recipe.meal === meal);
+      }
+
+      function pickRecipe(meal, avoidIds = []) {
+        const pool = getPool(meal);
+        const available = pool.filter((recipe) => !avoidIds.includes(recipe.id));
+        const choices = available.length ? available : pool;
+        cursor[meal] = ((cursor[meal] || 0) + 1) % choices.length;
+        return choices[cursor[meal]];
+      }
+
+      function generatePlan() {
+        cursor = { breakfast: -1, lunch: -1, dinner: -1 };
+        currentPlan = days.map((day) => {
+          const used = [];
+          const meals = {};
+          mealTypes.forEach(({ id }) => {
+            const recipe = pickRecipe(id, used);
+            meals[id] = recipe;
+            used.push(recipe.id);
+          });
+          return { day, meals };
+        });
+        render();
+      }
+
+      function swapMeal(dayIndex, mealId) {
+        const day = currentPlan[dayIndex];
+        const used = Object.entries(day.meals).filter(([id]) => id !== mealId).map(([, recipe]) => recipe.id);
+        day.meals[mealId] = pickRecipe(mealId, used);
+        render();
+      }
+
+      function render() {
+        const household = getHousehold();
+        const regionMultiplier = Number(locationFactor.value) || 1;
+        let weeklyCost = 0;
+        planner.innerHTML = currentPlan.map((day, dayIndex) => `
+          <section class="day-column">
+            <div class="day-title">${day.day}</div>
+            ${mealTypes.map(({ id, label }) => {
+              const recipe = day.meals[id];
+              return `
+                <article class="meal-card">
+                  <div class="meal-label">
+                    <span>${label}</span>
+                    <button class="swap-button" type="button" aria-label="Cambiar ${label} de ${day.day}" data-day="${dayIndex}" data-meal="${id}">&#8635;</button>
+                  </div>
+                  <h3 class="recipe-name">${recipe.name}</h3>
+                  <div class="recipe-meta">${recipe.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
+                  <p class="ingredients">${recipe.ingredients.map(([name]) => name).join(", ")}</p>
+                </article>`;
+            }).join("")}
+          </section>`).join("");
+
+        const grouped = new Map();
+        currentPlan.forEach(({ meals }) => {
+          Object.values(meals).forEach((recipe) => {
+            recipe.ingredients.forEach(([name, amount, recipeUnit, group]) => {
+              const purchase = purchaseUnits[name] || { unit: recipeUnit, factor: 1 };
+              const key = `${group}|${name}|${purchase.unit}`;
+              const current = grouped.get(key) || { name, amount: 0, unit: purchase.unit, group };
+              current.amount += amount * purchase.factor * household.portions;
+              grouped.set(key, current);
+              weeklyCost += (estimatedPrices[name] || 10) * amount * purchase.factor * household.portions * regionMultiplier;
+            });
+          });
+        });
+
+        const byGroup = Array.from(grouped.values()).reduce((groups, item) => {
+          groups[item.group] = groups[item.group] || [];
+          groups[item.group].push(item);
+          return groups;
+        }, {});
+
+        shoppingList.innerHTML = Object.entries(byGroup).sort(([a], [b]) => a.localeCompare(b)).map(([group, items]) => `
+          <section class="shopping-group">
+            <h3>${group}</h3>
+            <ul>${items.sort((a, b) => a.name.localeCompare(b.name)).map((item) => `
+              <li><span>${item.name}</span><span class="quantity">${formatAmount(item.amount)} ${item.unit}</span></li>
+            `).join("")}</ul>
+          </section>`).join("");
+
+        const selected = currentPlan.flatMap(({ meals }) => Object.values(meals));
+        recipeCount.textContent = new Set(selected.map((recipe) => recipe.id)).size;
+        vegCount.textContent = selected.filter((recipe) => recipe.ingredients.some(([, , , group]) => group === "Verduras")).length;
+        servingCount.textContent = formatAmount(household.portions);
+        costEstimate.textContent = formatCurrency(weeklyCost);
+      }
+
+      function formatAmount(amount) {
+        if (amount >= 10) return Math.ceil(amount);
+        if (amount >= 1) return Number(amount.toFixed(1)).toString();
+        return Number(amount.toFixed(2)).toString();
+      }
+
+      function formatCurrency(amount) {
+        return new Intl.NumberFormat("es-MX", {
+          style: "currency",
+          currency: "MXN",
+          maximumFractionDigits: 0,
+        }).format(amount);
+      }
+
+      planner.addEventListener("click", (event) => {
+        const button = event.target.closest(".swap-button");
+        if (button) swapMeal(Number(button.dataset.day), button.dataset.meal);
+      });
+      document.querySelector("#generateBtn").addEventListener("click", generatePlan);
+      styleFilter.addEventListener("change", generatePlan);
+      adultCount.addEventListener("input", render);
+      childCount.addEventListener("input", render);
+      babyCount.addEventListener("input", render);
+      locationFactor.addEventListener("change", render);
+      generatePlan();
+    </script>
+  </body>
+</html>
