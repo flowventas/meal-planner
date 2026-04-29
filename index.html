@@ -307,6 +307,71 @@
         white-space: nowrap;
       }
 
+      .recipe-form-panel {
+        margin-bottom: 16px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--line);
+        box-shadow: 0 16px 45px rgba(36, 49, 38, 0.12);
+      }
+
+      .recipe-form {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        padding: 18px 20px 20px;
+      }
+
+      .wide-field {
+        grid-column: span 2;
+      }
+
+      .full-field {
+        grid-column: 1 / -1;
+      }
+
+      textarea {
+        min-height: 108px;
+        resize: vertical;
+        padding: 10px;
+        color: var(--ink);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font: inherit;
+        line-height: 1.4;
+      }
+
+      .checkbox-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        min-height: 42px;
+      }
+
+      .checkbox-row label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .checkbox-row input {
+        width: 16px;
+        min-height: 16px;
+      }
+
+      .form-message {
+        min-height: 20px;
+        margin: 0;
+        color: var(--berry);
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
       @media (max-width: 980px) {
         .toolbar {
           align-items: stretch;
@@ -319,6 +384,10 @@
 
         .shopping-panel {
           position: static;
+        }
+
+        .recipe-form {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
 
@@ -347,6 +416,14 @@
 
         .planner {
           grid-template-columns: repeat(7, minmax(210px, 1fr));
+        }
+
+        .recipe-form {
+          grid-template-columns: 1fr;
+        }
+
+        .wide-field {
+          grid-column: 1 / -1;
         }
       }
     </style>
@@ -401,6 +478,50 @@
         <article><span id="costEstimate">$0</span><p>costo semanal estimado</p></article>
       </section>
 
+      <section class="recipe-form-panel">
+        <div class="panel-heading">
+          <h2>Agregar receta</h2>
+          <p>Guarda recetas vistas en internet, TikTok o redes sociales.</p>
+        </div>
+        <form id="recipeForm" class="recipe-form">
+          <label class="field wide-field">
+            <span>Nombre</span>
+            <input id="newRecipeName" type="text" placeholder="Tacos de camaron" required />
+          </label>
+          <label class="field">
+            <span>Comida</span>
+            <select id="newRecipeMeal">
+              <option value="breakfast">Desayuno</option>
+              <option value="lunch">Comida</option>
+              <option value="dinner">Cena</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Link</span>
+            <input id="newRecipeSource" type="url" placeholder="https://..." />
+          </label>
+          <div class="field wide-field">
+            <span>Estilo</span>
+            <div class="checkbox-row">
+              <label><input type="checkbox" name="newRecipeStyle" value="balanced" checked />Balanceado</label>
+              <label><input type="checkbox" name="newRecipeStyle" value="light" />Ligero</label>
+              <label><input type="checkbox" name="newRecipeStyle" value="highProtein" />Alto en proteina</label>
+              <label><input type="checkbox" name="newRecipeStyle" value="budget" />Economico</label>
+            </div>
+          </div>
+          <label class="field wide-field">
+            <span>Tags</span>
+            <input id="newRecipeTags" type="text" placeholder="rapido, verduras, familiar" />
+          </label>
+          <label class="field full-field">
+            <span>Ingredientes</span>
+            <textarea id="newRecipeIngredients" placeholder="Pollo, 150, g, Proteinas&#10;Arroz integral, 0.5, taza, Cereales&#10;Brocoli, 1, taza, Verduras" required></textarea>
+          </label>
+          <p id="recipeFormMessage" class="form-message full-field"></p>
+          <button class="primary-button" type="submit">Guardar receta</button>
+        </form>
+      </section>
+
       <section class="content-grid">
         <div class="planner-panel">
           <div class="panel-heading">
@@ -426,6 +547,7 @@
         { id: "lunch", label: "Comida" },
         { id: "dinner", label: "Cena" },
       ];
+      const customRecipeStorageKey = "mealPlannerCustomRecipes";
       const recipes = [
         { id: "avena-frutos", meal: "breakfast", name: "Avena con frutos rojos y nuez", tags: ["fibra", "rapido"], styles: ["balanced", "light", "budget"], ingredients: [["Avena", 0.5, "taza", "Cereales"], ["Leche o bebida vegetal", 1, "taza", "Lacteos"], ["Frutos rojos", 0.5, "taza", "Frutas"], ["Nuez", 2, "cdas", "Semillas y nueces"]] },
         { id: "huevo-espinaca", meal: "breakfast", name: "Omelette de espinaca con aguacate", tags: ["proteina", "verduras"], styles: ["balanced", "highProtein", "light"], ingredients: [["Huevo", 2, "pzas", "Proteinas"], ["Espinaca", 1, "taza", "Verduras"], ["Aguacate", 0.5, "pza", "Frutas"], ["Tortilla de maiz", 2, "pzas", "Cereales"]] },
@@ -455,6 +577,13 @@
       const childCount = document.querySelector("#childCount");
       const babyCount = document.querySelector("#babyCount");
       const locationFactor = document.querySelector("#locationFactor");
+      const recipeForm = document.querySelector("#recipeForm");
+      const newRecipeName = document.querySelector("#newRecipeName");
+      const newRecipeMeal = document.querySelector("#newRecipeMeal");
+      const newRecipeSource = document.querySelector("#newRecipeSource");
+      const newRecipeTags = document.querySelector("#newRecipeTags");
+      const newRecipeIngredients = document.querySelector("#newRecipeIngredients");
+      const recipeFormMessage = document.querySelector("#recipeFormMessage");
 
       const estimatedPrices = {
         Aguacate: 22,
@@ -546,6 +675,98 @@
         const babies = Math.max(Number(babyCount.value) || 0, 0);
         const portions = adults + children * 0.6 + babies * 0.3;
         return { adults, children, babies, portions: Math.max(portions, 0.3) };
+      }
+
+      function loadCustomRecipes() {
+        try {
+          const savedRecipes = JSON.parse(localStorage.getItem(customRecipeStorageKey) || "[]");
+          if (Array.isArray(savedRecipes)) {
+            savedRecipes.forEach((recipe) => {
+              if (isValidRecipe(recipe) && !recipes.some((item) => item.id === recipe.id)) {
+                recipes.push(recipe);
+              }
+            });
+          }
+        } catch (error) {
+          localStorage.removeItem(customRecipeStorageKey);
+        }
+      }
+
+      function isValidRecipe(recipe) {
+        return Boolean(
+          recipe &&
+            recipe.id &&
+            recipe.meal &&
+            recipe.name &&
+            Array.isArray(recipe.styles) &&
+            Array.isArray(recipe.tags) &&
+            Array.isArray(recipe.ingredients) &&
+            recipe.ingredients.length,
+        );
+      }
+
+      function saveCustomRecipe(recipe) {
+        const savedRecipes = recipes.filter((item) => item.custom && item.id !== recipe.id);
+        savedRecipes.push(recipe);
+        localStorage.setItem(customRecipeStorageKey, JSON.stringify(savedRecipes));
+      }
+
+      function parseIngredients(value) {
+        return value
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const [name, amount = "1", unit = "pza", group = "Otros"] = line.split(",").map((part) => part.trim());
+            return [name, Number(amount) || 1, unit || "pza", group || "Otros"];
+          })
+          .filter(([name]) => name);
+      }
+
+      function createRecipeId(name) {
+        const slug = name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        return `custom-${slug || "receta"}-${Date.now()}`;
+      }
+
+      function handleRecipeSubmit(event) {
+        event.preventDefault();
+        const name = newRecipeName.value.trim();
+        const ingredients = parseIngredients(newRecipeIngredients.value);
+        const styles = Array.from(document.querySelectorAll('input[name="newRecipeStyle"]:checked')).map(
+          (input) => input.value,
+        );
+        const tags = newRecipeTags.value
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+
+        if (!name || !ingredients.length) {
+          recipeFormMessage.textContent = "Agrega nombre e ingredientes.";
+          return;
+        }
+
+        const recipe = {
+          id: createRecipeId(name),
+          meal: newRecipeMeal.value,
+          name,
+          tags: tags.length ? tags : ["usuario"],
+          styles: styles.length ? styles : ["balanced"],
+          ingredients,
+          source: newRecipeSource.value.trim(),
+          custom: true,
+        };
+
+        recipes.push(recipe);
+        saveCustomRecipe(recipe);
+        recipeForm.reset();
+        document.querySelector('input[name="newRecipeStyle"][value="balanced"]').checked = true;
+        recipeFormMessage.textContent = "Receta guardada.";
+        generatePlan();
       }
 
       function getPool(meal) {
@@ -665,6 +886,8 @@
       childCount.addEventListener("input", render);
       babyCount.addEventListener("input", render);
       locationFactor.addEventListener("change", render);
+      recipeForm.addEventListener("submit", handleRecipeSubmit);
+      loadCustomRecipes();
       generatePlan();
     </script>
   </body>
